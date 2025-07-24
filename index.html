@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Card Sorting Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 30px;
+    }
+    .card-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .card {
+      width: 80px;
+      height: 120px;
+      margin: 10px;
+      font-size: 24px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: gray;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .controls {
+      margin: 10px;
+    }
+    .log {
+      width: 60%;
+      height: 150px;
+      margin: 20px auto;
+      padding: 10px;
+      border: 1px solid #ccc;
+      overflow-y: auto;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+    select {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Card Sorting Game</h2>
+
+<label for="difficulty">Select Difficulty:</label>
+<select id="difficulty" onchange="startGame()">
+  <option value="4">Easy (4 cards)</option>
+  <option value="6">Medium (6 cards)</option>
+  <option value="8">Hard (8 cards)</option>
+</select>
+
+<div class="card-container" id="cards"></div>
+
+<div class="controls">
+  <button onclick="swapCards()">Swap</button>
+  <button onclick="passTurn()">Pass</button>
+</div>
+
+<div>
+  <strong>Turns:</strong> <span id="turns">0</span>
+</div>
+
+<div class="log" id="log"></div>
+
+<!-- Sound Effects -->
+https://www.soundjay.com/button/sounds/button-16.mp3
+https://www.soundjay.com/button/sounds/button-10.mp3
+https://www.soundjay.com/button/sounds/button-4.mp3
+
+<script>
+  let numbers = [], colors = [], revealed = [], selected = [], turns = 0;
+  const logBox = document.getElementById('log');
+  const cardsDiv = document.getElementById('cards');
+  const revealSound = new Audio("https://www.soundjay.com/button/sounds/button-16.mp3");
+  const swapSound = new Audio("https://www.soundjay.com/button/sounds/button-10.mp3");
+  const winSound = new Audio("https://www.soundjay.com/button/sounds/button-4.mp3");
+
+  const colorPalette = ['tomato', 'royalblue', 'seagreen', 'goldenrod', 'purple', 'darkorange', 'teal', 'crimson'];
+
+  function startGame() {
+    const count = parseInt(document.getElementById('difficulty').value);
+    numbers = [];
+    colors = [];
+    revealed = Array(count).fill(false);
+    selected = [];
+    turns = 0;
+    document.getElementById('turns').textContent = turns;
+    logBox.textContent = '';
+
+    const pool = Array.from({ length: 9 }, (_, i) => i + 1);
+    for (let i = 0; i < count; i++) {
+      const randIndex = Math.floor(Math.random() * pool.length);
+      const num = pool.splice(randIndex, 1)[0];
+      numbers.push(num);
+      colors.push(colorPalette[i % colorPalette.length]);
+    }
+    renderCards();
+  }
+
+  function renderCards() {
+    cardsDiv.innerHTML = '';
+    for (let i = 0; i < numbers.length; i++) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.backgroundColor = colors[i];
+      card.textContent = revealed[i] ? numbers[i] : '?';
+      card.onclick = () => handleCardClick(i);
+      cardsDiv.appendChild(card);
+    }
+  }
+
+  function handleCardClick(index) {
+    if (selected.length === 2 || revealed[index]) return;
+
+    if (selected.length === 1 && Math.abs(selected[0] - index) !== 1) {
+      log(`Card ${index + 1} is not adjacent to Card ${selected[0] + 1}`);
+      return;
+    }
+
+    revealed[index] = true;
+    selected.push(index);
+    revealSound.play();
+    log(`Checked Card ${index + 1}`);
+    renderCards();
+  }
+
+  function swapCards() {
+    if (selected.length !== 2) {
+      log('Select two adjacent cards to swap.');
+      return;
+    }
+    const [i, j] = selected;
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+    [colors[i], colors[j]] = [colors[j], colors[i]];
+    swapSound.play();
+    log(`Swapped Card ${i + 1} and Card ${j + 1}`);
+    endTurn();
+  }
+
+  function passTurn() {
+    if (selected.length === 0) {
+      log('Check at least one card before passing.');
+      return;
+    }
+    log('Passed the turn.');
+    endTurn();
+  }
+
+  function endTurn() {
+    turns++;
+    document.getElementById('turns').textContent = turns;
+    selected = [];
+    revealed = Array(numbers.length).fill(false);
+    renderCards();
+    checkWin();
+  }
+
+  function checkWin() {
+    const sorted = [...numbers].sort((a, b) => a - b);
+    if (numbers.every((val, idx) => val === sorted[idx])) {
+      winSound.play();
+      log(`🎉 Cards sorted in ${turns} turns!`);
+    }
+  }
+
+  function log(message) {
+    logBox.textContent += message + '\n';
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  // Start with default difficulty
+  startGame();
+</script>
+
+
+</body>
+</html>
